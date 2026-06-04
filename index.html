@@ -18,14 +18,12 @@ body{
     color:white;
 }
 
-/* PARTICLES */
 #tsparticles{
     position:fixed;
     inset:0;
     z-index:0;
 }
 
-/* OVERLAY */
 #overlay{
     position:fixed;
     inset:0;
@@ -39,24 +37,17 @@ body{
     letter-spacing:1px;
 }
 
-/* CARD PREMIUM */
 .card{
     position:relative;
     z-index:2;
     width:440px;
     padding:22px;
     border-radius:20px;
-
     background:rgba(255,255,255,0.06);
     backdrop-filter:blur(30px);
     -webkit-backdrop-filter:blur(30px);
-
     border:1px solid rgba(255,255,255,0.12);
-
-    box-shadow:
-        0 0 25px rgba(168,85,247,0.15),
-        0 0 60px rgba(255,115,250,0.08);
-
+    box-shadow:0 0 25px rgba(168,85,247,0.15),0 0 60px rgba(255,115,250,0.08);
     transform:translateY(15px);
     opacity:0;
     transition:.6s;
@@ -67,14 +58,12 @@ body{
     opacity:1;
 }
 
-/* TOP */
 .top{
     display:flex;
     gap:15px;
     align-items:center;
 }
 
-/* AVATAR */
 .avatar-wrapper{
     position:relative;
     width:82px;
@@ -88,7 +77,6 @@ body{
     border:2px solid rgba(255,255,255,0.2);
 }
 
-/* STATUS PULSANTE */
 .status{
     width:14px;
     height:14px;
@@ -99,40 +87,14 @@ body{
     border:3px solid #0d0d10;
 }
 
-.online{
-    background:#23a559;
-    box-shadow:0 0 8px #23a559;
-    animation:pulse 1.5s infinite;
-}
-
+.online{background:#23a559;}
 .idle{background:#f0b232;}
 .dnd{background:#f23f43;}
 .offline{background:#80848e;}
 
-@keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(35,165,89,.6);}
-    70%{box-shadow:0 0 0 8px rgba(35,165,89,0);}
-    100%{box-shadow:0 0 0 0 rgba(35,165,89,0);}
-}
-
-/* TEXT */
 .name{font-size:20px;font-weight:700;}
 .username{color:#b5bac1;font-size:13px;margin-top:2px;}
 
-/* BADGES */
-.badges{
-    display:flex;
-    gap:6px;
-    margin-top:6px;
-    align-items:center;
-}
-
-.badges svg{
-    width:18px;
-    height:18px;
-}
-
-/* SECTIONS */
 .section{
     margin-top:14px;
     padding:12px;
@@ -152,6 +114,13 @@ body{
     width:58px;
     height:58px;
     border-radius:10px;
+}
+
+/* STATUS CUSTOM */
+.custom-status{
+    margin-top:6px;
+    font-size:13px;
+    color:#cfcfcf;
 }
 </style>
 </head>
@@ -178,7 +147,8 @@ body{
             <div class="name" id="name">Carregando...</div>
             <div class="username" id="username"></div>
 
-            <div class="badges" id="badges"></div>
+            <!-- STATUS CUSTOM -->
+            <div class="custom-status" id="custom-status"></div>
         </div>
     </div>
 
@@ -250,7 +220,7 @@ socket.onmessage = (event) => {
     document.getElementById("avatar").src =
         `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512`;
 
-    /* STATUS */
+    /* STATUS ONLINE */
     const status = document.getElementById("status");
     status.className = "status";
 
@@ -259,22 +229,10 @@ socket.onmessage = (event) => {
     else if(data.discord_status === "dnd") status.classList.add("dnd");
     else status.classList.add("offline");
 
-    /* BADGES PREMIUM (FIXO + LIMPO) */
-    const badges = document.getElementById("badges");
-    badges.innerHTML = "";
-
-    // Nitro (roxo)
-    badges.innerHTML += `
-    <svg viewBox="0 0 24 24">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#c084fc"/>
-        <path d="M2 17l10 5 10-5-10-5-10 5z" fill="#a855f7"/>
-    </svg>`;
-
-    // Boost (rosa)
-    badges.innerHTML += `
-    <svg viewBox="0 0 24 24">
-        <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z" fill="#ff73fa"/>
-    </svg>`;
+    /* STATUS CUSTOM (BIO / DISCORD STATUS) */
+    const custom = data.activities?.find(a => a.type === 4);
+    document.getElementById("custom-status").innerText =
+        custom ? "💬 " + custom.state : "";
 
     /* ACTIVITY */
     const activity = data.activities?.find(a => a.type === 0);
