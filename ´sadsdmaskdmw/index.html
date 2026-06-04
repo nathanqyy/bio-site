@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suano bios</title>
+
+<style>
+body{
+    margin:0;
+    height:100vh;
+    overflow:hidden;
+    font-family:Arial, sans-serif;
+    background: radial-gradient(circle at top, #1a1a2e, #0d0d10);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+}
+
+/* PARTICLES */
+#tsparticles{
+    position:fixed;
+    inset:0;
+    z-index:0;
+}
+
+/* OVERLAY */
+#overlay{
+    position:fixed;
+    inset:0;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:10;
+    cursor:pointer;
+    font-size:18px;
+    letter-spacing:1px;
+}
+
+/* CARD PREMIUM */
+.card{
+    position:relative;
+    z-index:2;
+    width:440px;
+    padding:22px;
+    border-radius:20px;
+
+    background:rgba(255,255,255,0.06);
+    backdrop-filter:blur(30px);
+    -webkit-backdrop-filter:blur(30px);
+
+    border:1px solid rgba(255,255,255,0.12);
+
+    box-shadow:
+        0 0 25px rgba(168,85,247,0.15),
+        0 0 60px rgba(255,115,250,0.08);
+
+    transform:translateY(15px);
+    opacity:0;
+    transition:.6s;
+}
+
+.card.show{
+    transform:translateY(0);
+    opacity:1;
+}
+
+/* TOP */
+.top{
+    display:flex;
+    gap:15px;
+    align-items:center;
+}
+
+/* AVATAR */
+.avatar-wrapper{
+    position:relative;
+    width:82px;
+    height:82px;
+}
+
+.avatar{
+    width:82px;
+    height:82px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.2);
+}
+
+/* STATUS PULSANTE */
+.status{
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    position:absolute;
+    bottom:4px;
+    right:4px;
+    border:3px solid #0d0d10;
+}
+
+.online{
+    background:#23a559;
+    box-shadow:0 0 8px #23a559;
+    animation:pulse 1.5s infinite;
+}
+
+.idle{background:#f0b232;}
+.dnd{background:#f23f43;}
+.offline{background:#80848e;}
+
+@keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(35,165,89,.6);}
+    70%{box-shadow:0 0 0 8px rgba(35,165,89,0);}
+    100%{box-shadow:0 0 0 0 rgba(35,165,89,0);}
+}
+
+/* TEXT */
+.name{font-size:20px;font-weight:700;}
+.username{color:#b5bac1;font-size:13px;margin-top:2px;}
+
+/* BADGES */
+.badges{
+    display:flex;
+    gap:6px;
+    margin-top:6px;
+    align-items:center;
+}
+
+.badges svg{
+    width:18px;
+    height:18px;
+}
+
+/* SECTIONS */
+.section{
+    margin-top:14px;
+    padding:12px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.06);
+}
+
+.spotify{
+    display:none;
+    align-items:center;
+    gap:10px;
+    margin-top:10px;
+}
+
+.spotify img{
+    width:58px;
+    height:58px;
+    border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="tsparticles"></div>
+
+<audio id="music" loop preload="auto">
+<source src="https://cdn.discordapp.com/attachments/1506850010866651229/1512218608871407626/source.mp3?ex=6a234ad4&is=6a21f954&hm=d109aefc7c3258d4ab260ddb0b1647ffdc715aab37ee5ac5741c539634e3288b">
+</audio>
+
+<div id="overlay">Clique para entrar</div>
+
+<div class="card" id="card">
+
+    <div class="top">
+        <div class="avatar-wrapper">
+            <img class="avatar" id="avatar">
+            <div class="status offline" id="status"></div>
+        </div>
+
+        <div>
+            <div class="name" id="name">Carregando...</div>
+            <div class="username" id="username"></div>
+
+            <div class="badges" id="badges"></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <strong>Atividade</strong>
+        <div id="activity">Carregando...</div>
+    </div>
+
+    <div class="section spotify" id="spotify">
+        <img id="spotify-img">
+        <div>
+            <div id="spotify-song"></div>
+            <div style="color:#b5bac1;font-size:13px;" id="spotify-artist"></div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+
+<script>
+tsParticles.load("tsparticles", {
+    particles: {
+        number: { value: 60 },
+        color: { value: "#ffffff" },
+        opacity: { value: 0.35 },
+        size: { value: 2 },
+        move: { enable: true, speed: 0.6 },
+        links: { enable: true, color: "#ffffff", opacity: 0.12 }
+    }
+});
+
+const overlay = document.getElementById("overlay");
+const music = document.getElementById("music");
+const card = document.getElementById("card");
+
+overlay.addEventListener("click", async () => {
+    overlay.style.display = "none";
+    card.classList.add("show");
+
+    music.volume = 0.3;
+    try { await music.play(); } catch(e){}
+});
+
+const USER_ID = "1488851794670125128";
+
+const socket = new WebSocket("wss://api.lanyard.rest/socket");
+
+socket.onopen = () => {
+    socket.send(JSON.stringify({
+        op: 2,
+        d: { subscribe_to_id: USER_ID }
+    }));
+};
+
+socket.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if(!msg.d) return;
+
+    const data = msg.d;
+    const user = data.discord_user;
+
+    document.getElementById("name").innerText =
+        user.global_name || user.username;
+
+    document.getElementById("username").innerText =
+        "@" + user.username;
+
+    document.getElementById("avatar").src =
+        `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512`;
+
+    /* STATUS */
+    const status = document.getElementById("status");
+    status.className = "status";
+
+    if(data.discord_status === "online") status.classList.add("online");
+    else if(data.discord_status === "idle") status.classList.add("idle");
+    else if(data.discord_status === "dnd") status.classList.add("dnd");
+    else status.classList.add("offline");
+
+    /* BADGES PREMIUM (FIXO + LIMPO) */
+    const badges = document.getElementById("badges");
+    badges.innerHTML = "";
+
+    // Nitro (roxo)
+    badges.innerHTML += `
+    <svg viewBox="0 0 24 24">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#c084fc"/>
+        <path d="M2 17l10 5 10-5-10-5-10 5z" fill="#a855f7"/>
+    </svg>`;
+
+    // Boost (rosa)
+    badges.innerHTML += `
+    <svg viewBox="0 0 24 24">
+        <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z" fill="#ff73fa"/>
+    </svg>`;
+
+    /* ACTIVITY */
+    const activity = data.activities?.find(a => a.type === 0);
+    document.getElementById("activity").innerText =
+        activity ? "🎮 " + activity.name : "Sem atividade";
+
+    /* SPOTIFY */
+    const spotify = document.getElementById("spotify");
+
+    if(data.listening_to_spotify){
+        spotify.style.display = "flex";
+        document.getElementById("spotify-img").src = data.spotify.album_art_url;
+        document.getElementById("spotify-song").innerText = data.spotify.song;
+        document.getElementById("spotify-artist").innerText = data.spotify.artist;
+    } else {
+        spotify.style.display = "none";
+    }
+};
+</script>
+
+</body>
+</html>
