@@ -16,14 +16,17 @@ body{
     justify-content:center;
     align-items:center;
     color:white;
+    gap:20px;
 }
 
+/* PARTICLES */
 #tsparticles{
     position:fixed;
     inset:0;
     z-index:0;
 }
 
+/* OVERLAY */
 #overlay{
     position:fixed;
     inset:0;
@@ -37,10 +40,11 @@ body{
     letter-spacing:1px;
 }
 
+/* CARD */
 .card{
     position:relative;
     z-index:2;
-    width:440px;
+    width:360px;
     padding:22px;
     border-radius:20px;
     background:rgba(255,255,255,0.06);
@@ -116,7 +120,6 @@ body{
     border-radius:10px;
 }
 
-/* STATUS CUSTOM */
 .custom-status{
     margin-top:6px;
     font-size:13px;
@@ -129,43 +132,17 @@ body{
 
 <div id="tsparticles"></div>
 
-<audio id="music" loop preload="auto">
-<source src="https://cdn.discordapp.com/attachments/1506850010866651229/1512218608871407626/source.mp3?ex=6a234ad4&is=6a21f954&hm=d109aefc7c3258d4ab260ddb0b1647ffdc715aab37ee5ac5741c539634e3288b">
+<audio id="music" loop>
+<source src="https://cdn.discordapp.com/attachments/1506850010866651229/1512218608871407626/source.mp3">
 </audio>
 
 <div id="overlay">Clique para entrar</div>
 
-<div class="card" id="card">
+<!-- VOCÊ -->
+<div class="card" id="card1"></div>
 
-    <div class="top">
-        <div class="avatar-wrapper">
-            <img class="avatar" id="avatar">
-            <div class="status offline" id="status"></div>
-        </div>
-
-        <div>
-            <div class="name" id="name">Carregando...</div>
-            <div class="username" id="username"></div>
-
-            <!-- STATUS CUSTOM -->
-            <div class="custom-status" id="custom-status"></div>
-        </div>
-    </div>
-
-    <div class="section">
-        <strong>Atividade</strong>
-        <div id="activity">Carregando...</div>
-    </div>
-
-    <div class="section spotify" id="spotify">
-        <img id="spotify-img">
-        <div>
-            <div id="spotify-song"></div>
-            <div style="color:#b5bac1;font-size:13px;" id="spotify-artist"></div>
-        </div>
-    </div>
-
-</div>
+<!-- AMIGO -->
+<div class="card" id="card2"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
 
@@ -183,74 +160,73 @@ tsParticles.load("tsparticles", {
 
 const overlay = document.getElementById("overlay");
 const music = document.getElementById("music");
-const card = document.getElementById("card");
 
 overlay.addEventListener("click", async () => {
     overlay.style.display = "none";
-    card.classList.add("show");
+    document.querySelectorAll(".card").forEach(c => c.classList.add("show"));
 
     music.volume = 0.3;
     try { await music.play(); } catch(e){}
 });
 
-const USER_ID = "1488851794670125128";
+function createSocket(USER_ID, elementId){
 
-const socket = new WebSocket("wss://api.lanyard.rest/socket");
+    const el = document.getElementById(elementId);
 
-socket.onopen = () => {
-    socket.send(JSON.stringify({
-        op: 2,
-        d: { subscribe_to_id: USER_ID }
-    }));
-};
+    const socket = new WebSocket("wss://api.lanyard.rest/socket");
 
-socket.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    if(!msg.d) return;
+    socket.onopen = () => {
+        socket.send(JSON.stringify({
+            op: 2,
+            d: { subscribe_to_id: USER_ID }
+        }));
+    };
 
-    const data = msg.d;
-    const user = data.discord_user;
+    socket.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if(!msg.d) return;
 
-    document.getElementById("name").innerText =
-        user.global_name || user.username;
+        const data = msg.d;
+        const user = data.discord_user;
 
-    document.getElementById("username").innerText =
-        "@" + user.username;
+        const custom = data.activities?.find(a => a.type === 4);
+        const activity = data.activities?.find(a => a.type === 0);
 
-    document.getElementById("avatar").src =
-        `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512`;
+        el.innerHTML = `
+            <div class="top">
+                <div class="avatar-wrapper">
+                    <img class="avatar" src="https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512">
+                    <div class="status ${data.discord_status}"></div>
+                </div>
 
-    /* STATUS ONLINE */
-    const status = document.getElementById("status");
-    status.className = "status";
+                <div>
+                    <div class="name">${user.global_name || user.username}</div>
+                    <div class="username">@${user.username}</div>
+                    <div class="custom-status">${custom ? "💬 " + custom.state : ""}</div>
+                </div>
+            </div>
 
-    if(data.discord_status === "online") status.classList.add("online");
-    else if(data.discord_status === "idle") status.classList.add("idle");
-    else if(data.discord_status === "dnd") status.classList.add("dnd");
-    else status.classList.add("offline");
+            <div class="section">
+                <strong>Atividade</strong>
+                <div>${activity ? "🎮 " + activity.name : "Sem atividade"}</div>
+            </div>
 
-    /* STATUS CUSTOM (BIO / DISCORD STATUS) */
-    const custom = data.activities?.find(a => a.type === 4);
-    document.getElementById("custom-status").innerText =
-        custom ? "💬 " + custom.state : "";
+            <div class="section spotify" style="${data.listening_to_spotify ? "display:flex" : "display:none"}">
+                <img src="${data.spotify?.album_art_url || ""}">
+                <div>
+                    <div>${data.spotify?.song || ""}</div>
+                    <div style="color:#b5bac1;font-size:13px;">
+                        ${data.spotify?.artist || ""}
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+}
 
-    /* ACTIVITY */
-    const activity = data.activities?.find(a => a.type === 0);
-    document.getElementById("activity").innerText =
-        activity ? "🎮 " + activity.name : "Sem atividade";
-
-    /* SPOTIFY */
-    const spotify = document.getElementById("spotify");
-
-    if(data.listening_to_spotify){
-        spotify.style.display = "flex";
-        document.getElementById("spotify-img").src = data.spotify.album_art_url;
-        document.getElementById("spotify-song").innerText = data.spotify.song;
-        document.getElementById("spotify-artist").innerText = data.spotify.artist;
-    } else {
-        spotify.style.display = "none";
-    }
-};
+/* SEU ID + AMIGO */
+createSocket("1488851794670125128", "card1");
+createSocket("1274361628426502215", "card2");
 </script>
 
 </body>
