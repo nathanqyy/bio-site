@@ -132,8 +132,9 @@ body{
 
 <div id="tsparticles"></div>
 
-<audio id="music" loop>
-<source src="https://cdn.discordapp.com/attachments/1506850010866651229/1512218608871407626/source.mp3">
+<!-- 🔊 MÚSICA (CORRIGIDO) -->
+<audio id="music" loop preload="auto">
+<source src="https://cdn.discordapp.com/attachments/1506850010866651229/1512218608871407626/source.mp3?ex=6a234ad4&is=6a21f954&hm=d109aefc7c3258d4ab260ddb0b1647ffdc715aab37ee5ac5741c539634e3288b&">
 </audio>
 
 <div id="overlay">Clique para entrar</div>
@@ -166,7 +167,14 @@ overlay.addEventListener("click", async () => {
     document.querySelectorAll(".card").forEach(c => c.classList.add("show"));
 
     music.volume = 0.3;
-    try { await music.play(); } catch(e){}
+
+    try {
+        await music.play();
+    } catch (e) {
+        document.addEventListener("click", () => {
+            music.play();
+        }, { once: true });
+    }
 });
 
 function createSocket(USER_ID, elementId){
