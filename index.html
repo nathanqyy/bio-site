@@ -131,7 +131,7 @@ body {
     color: #cfcfcf;
 }
 
-/* --- REGRAS PARA CELULAR (RESPONSIVIDADE) --- */
+/* RESPONSIVIDADE PARA CELULAR */
 @media (max-width: 768px) {
     body {
         flex-direction: column;
@@ -152,61 +152,79 @@ body {
 <div id="overlay">Clique para entrar</div>
 
 <div class="card" id="card1"></div>
-
 <div class="card" id="card2"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
 
 <script>
-tsParticles.load("tsparticles", {
-    particles: {
-        number: { value: 60 },
-        color: { value: "#ffffff" },
-        opacity: { value: 0.35 },
-        size: { value: 2 },
-        move: { enable: true, speed: 0.6 },
-        links: { enable: true, color: "#ffffff", opacity: 0.12 }
-    }
-});
+// 1. ISOLANDO O BOTÃO DE CLIQUE PARA NUNCA TRAVAR
+var overlay = document.getElementById("overlay");
+var music = document.getElementById("music");
 
-const overlay = document.getElementById("overlay");
-const music = document.getElementById("music");
-
-overlay.addEventListener("click", async () => {
+overlay.addEventListener("click", function() {
     overlay.style.display = "none";
-    document.querySelectorAll(".card").forEach(c => c.classList.add("show"));
-
-    music.volume = 0.3;
+    
+    var cards = document.querySelectorAll(".card");
+    for(var i = 0; i < cards.length; i++) {
+        cards[i].classList.add("show");
+    }
 
     try {
-        await music.play();
-    } catch (e) {
-        document.addEventListener("click", () => {
-            music.play();
-        }, { once: true });
-    }
+        music.volume = 0.3;
+        var playPromise = music.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(function() {
+                console.log("Navegador bloqueou a música ou o link falhou.");
+            });
+        }
+    } catch(e) {}
 });
 
-function createSocket(USER_ID, elementId){
-    const el = document.getElementById(elementId);
-    const socket = new WebSocket("wss://api.lanyard.rest/socket");
+// 2. ISOLANDO AS PARTÍCULAS
+try {
+    tsParticles.load("tsparticles", {
+        particles: {
+            number: { value: 60 },
+            color: { value: "#ffffff" },
+            opacity: { value: 0.35 },
+            size: { value: 2 },
+            move: { enable: true, speed: 0.6 },
+            links: { enable: true, color: "#ffffff", opacity: 0.12 }
+        }
+    });
+} catch(e) { console.log("Erro nas partículas"); }
 
-    socket.onopen = () => {
+// 3. COMUNICAÇÃO COM O DISCORD MAIS SEGURA PARA CELULARES
+function createSocket(USER_ID, elementId){
+    var el = document.getElementById(elementId);
+    var socket = new WebSocket("wss://api.lanyard.rest/socket");
+
+    socket.onopen = function() {
         socket.send(JSON.stringify({
             op: 2,
             d: { subscribe_to_id: USER_ID }
         }));
     };
 
-    socket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
+    socket.onmessage = function(event) {
+        var msg = JSON.parse(event.data);
         if(!msg.d) return;
 
-        const data = msg.d;
-        const user = data.discord_user;
+        var data = msg.d;
+        var user = data.discord_user;
 
-        const custom = data.activities?.find(a => a.type === 4);
-        const activity = data.activities?.find(a => a.type === 0);
+        var custom = null;
+        var activity = null;
+
+        if (data.activities) {
+            custom = data.activities.find(function(a) { return a.type === 4; });
+            activity = data.activities.find(function(a) { return a.type === 0; });
+        }
+
+        var spotifyDisplay = data.listening_to_spotify ? "display:flex" : "display:none";
+        var spotifyAlbum = (data.spotify && data.spotify.album_art_url) ? data.spotify.album_art_url : "";
+        var spotifySong = (data.spotify && data.spotify.song) ? data.spotify.song : "";
+        var spotifyArtist = (data.spotify && data.spotify.artist) ? data.spotify.artist : "";
 
         el.innerHTML = `
             <div class="top">
@@ -227,7 +245,22 @@ function createSocket(USER_ID, elementId){
                 <div>${activity ? "🎮 " + activity.name : "Sem atividade"}</div>
             </div>
 
-            <div class="section spotify" style="${data.listening_to_spotify ? "display:flex" : "display:none"}">
-                <img src="${data.spotify?.album_art_url || ""}">
+            <div class="section spotify" style="${spotifyDisplay}">
+                <img src="${spotifyAlbum}">
                 <div>
-                    <div>${data.spotify?.song || ""}</div>
+                    <div>${spotifySong}</div>
+                    <div style="color:#b5bac1;font-size:13px;">
+                        ${spotifyArtist}
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+}
+
+createSocket("1488851794670125128", "card1");
+createSocket("1274361628426502215", "card2");
+</script>
+
+</body>
+</html>
