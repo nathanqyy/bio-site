@@ -1,9 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suano bios</title>
+
 <style>
 body {
     margin: 0;
-    min-height: 100vh; /* Alterado de height para min-height */
-    overflow-x: hidden; /* Esconde rolagem horizontal */
-    overflow-y: auto; /* Permite rolar para baixo no celular se necessário */
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
     font-family: Arial, sans-serif;
     background: radial-gradient(circle at top, #1a1a2e, #0d0d10);
     display: flex;
@@ -11,7 +18,7 @@ body {
     align-items: center;
     color: white;
     gap: 20px;
-    padding: 20px; /* Adiciona um respiro nas bordas da tela */
+    padding: 20px;
     box-sizing: border-box;
 }
 
@@ -40,9 +47,9 @@ body {
 .card {
     position: relative;
     z-index: 2;
-    width: 100%; /* Ocupa a largura disponível... */
-    max-width: 360px; /* ...mas não passa de 360px em telas grandes */
-    box-sizing: border-box; /* Garante que o padding não aumente o tamanho total do card */
+    width: 100%;
+    max-width: 360px;
+    box-sizing: border-box;
     padding: 22px;
     border-radius: 20px;
     background: rgba(255,255,255,0.06);
@@ -127,8 +134,100 @@ body {
 /* --- REGRAS PARA CELULAR (RESPONSIVIDADE) --- */
 @media (max-width: 768px) {
     body {
-        flex-direction: column; /* Empilha os cards um em cima do outro */
-        padding: 40px 20px; /* Dá mais espaço no topo e embaixo no celular */
+        flex-direction: column;
+        padding: 40px 20px;
     }
 }
 </style>
+</head>
+
+<body>
+
+<div id="tsparticles"></div>
+
+<audio id="music" loop preload="auto">
+<source src="https://cdn.discordapp.com/attachments/1506850010866651229/1512218608871407626/source.mp3?ex=6a234ad4&is=6a21f954&hm=d109aefc7c3258d4ab260ddb0b1647ffdc715aab37ee5ac5741c539634e3288b&">
+</audio>
+
+<div id="overlay">Clique para entrar</div>
+
+<div class="card" id="card1"></div>
+
+<div class="card" id="card2"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
+
+<script>
+tsParticles.load("tsparticles", {
+    particles: {
+        number: { value: 60 },
+        color: { value: "#ffffff" },
+        opacity: { value: 0.35 },
+        size: { value: 2 },
+        move: { enable: true, speed: 0.6 },
+        links: { enable: true, color: "#ffffff", opacity: 0.12 }
+    }
+});
+
+const overlay = document.getElementById("overlay");
+const music = document.getElementById("music");
+
+overlay.addEventListener("click", async () => {
+    overlay.style.display = "none";
+    document.querySelectorAll(".card").forEach(c => c.classList.add("show"));
+
+    music.volume = 0.3;
+
+    try {
+        await music.play();
+    } catch (e) {
+        document.addEventListener("click", () => {
+            music.play();
+        }, { once: true });
+    }
+});
+
+function createSocket(USER_ID, elementId){
+    const el = document.getElementById(elementId);
+    const socket = new WebSocket("wss://api.lanyard.rest/socket");
+
+    socket.onopen = () => {
+        socket.send(JSON.stringify({
+            op: 2,
+            d: { subscribe_to_id: USER_ID }
+        }));
+    };
+
+    socket.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if(!msg.d) return;
+
+        const data = msg.d;
+        const user = data.discord_user;
+
+        const custom = data.activities?.find(a => a.type === 4);
+        const activity = data.activities?.find(a => a.type === 0);
+
+        el.innerHTML = `
+            <div class="top">
+                <div class="avatar-wrapper">
+                    <img class="avatar" src="https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=512">
+                    <div class="status ${data.discord_status}"></div>
+                </div>
+
+                <div>
+                    <div class="name">${user.global_name || user.username}</div>
+                    <div class="username">@${user.username}</div>
+                    <div class="custom-status">${custom ? "💬 " + custom.state : ""}</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <strong>Atividade</strong>
+                <div>${activity ? "🎮 " + activity.name : "Sem atividade"}</div>
+            </div>
+
+            <div class="section spotify" style="${data.listening_to_spotify ? "display:flex" : "display:none"}">
+                <img src="${data.spotify?.album_art_url || ""}">
+                <div>
+                    <div>${data.spotify?.song || ""}</div>
