@@ -6,6 +6,7 @@
 <title>Suano bios</title>
 
 <link rel="icon" type="image/png" href="https://cdn.discordapp.com/attachments/1506850010866651229/1512318266180239411/nadekotrace.png?ex=6a23a7a4&is=6a225624&hm=2971120fb1613e7ce75cda22184f95237f849d27e5acf78c6a36ce81ff54479e&">
+
 <style>
 body {
     margin: 0;
@@ -21,6 +22,9 @@ body {
     gap: 20px;
     padding: 20px;
     box-sizing: border-box;
+    
+    /* 👇 CURSOR GERAL DO SITE 👇 */
+    cursor: url('https://cdn.discordapp.com/attachments/1506850010866651229/1512326728582692984/cursor_seta.png?ex=6a23af85&is=6a225e05&hm=09b08ac48b2aa4f786de3184881f63e61a31aaeb4dbac5f141d0d279ddd74cd9&'), auto;
 }
 
 /* PARTICLES */
@@ -39,7 +43,9 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 10;
-    cursor: pointer;
+    
+    /* 👇 CURSOR PARA A TELA DE ENTRADA 👇 */
+    cursor: url('https://cdn.discordapp.com/attachments/1506850010866651229/1512326728847196353/cursor_kitty.png?ex=6a23af85&is=6a225e05&hm=bf396e3464f29f505a9efa7bfcf6d7f83d0aacda7aad7258bbf141034b69b5d6&'), pointer;
     font-size: 18px;
     letter-spacing: 1px;
 }
@@ -158,7 +164,7 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
 
 <script>
-// 1. ISOLANDO O BOTÃO DE CLIQUE PARA NUNCA TRAVAR
+// 1. ISOLANDO O BOTÃO DE CLIQUE
 var overlay = document.getElementById("overlay");
 var music = document.getElementById("music");
 
@@ -181,7 +187,7 @@ overlay.addEventListener("click", function() {
     } catch(e) {}
 });
 
-// 2. ISOLANDO AS PARTÍCULAS
+// 2. PARTICULAS (MANTIDAS COMO ORIGINAL)
 try {
     tsParticles.load("tsparticles", {
         particles: {
@@ -195,7 +201,7 @@ try {
     });
 } catch(e) { console.log("Erro nas partículas"); }
 
-// 3. COMUNICAÇÃO COM O DISCORD MAIS SEGURA PARA CELULARES
+// 3. COMUNICAÇÃO COM O DISCORD
 function createSocket(USER_ID, elementId){
     var el = document.getElementById(elementId);
     var socket = new WebSocket("wss://api.lanyard.rest/socket");
